@@ -1,0 +1,10 @@
+flask==3.0.3
+flask-cors==4.0.0
+opencv-python-headless==4.9.0.80
+scikit-image==0.22.0
+PyWavelets==1.6.0
+scipy==1.12.0
+numpy==1.26.4
+Pillow==10.3.0
+gunicorn==21.2.0
+visual-clutter==0.1.0

@@ -1,0 +1,154 @@
+version: '3.9'
+
+services:
+  # ─────────────────────────────────────────────────────────
+  # Infrastructure
+  # ─────────────────────────────────────────────────────────
+  mongodb:
+    image: mongo:7.0
+    container_name: ux-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: ux-analyzer
+    networks:
+      - ux-network
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: ux-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - ux-network
+
+  # ─────────────────────────────────────────────────────────
+  # Python Microservices
+  # ─────────────────────────────────────────────────────────
+  cognitive-load:
+    build:
+      context: ./services/cognitive-load
+      dockerfile: Dockerfile
+    container_name: ux-cognitive-load
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - FLASK_ENV=production
+    volumes:
+      - ./services/cognitive-load:/app
+    networks:
+      - ux-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  touch-target:
+    build:
+      context: ./services/touch-target
+      dockerfile: Dockerfile
+    container_name: ux-touch-target
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      - FLASK_ENV=production
+      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+    volumes:
+      - ./services/touch-target:/app
+    networks:
+      - ux-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  visual-hierarchy:
+    build:
+      context: ./services/visual-hierarchy
+      dockerfile: Dockerfile
+    container_name: ux-visual-hierarchy
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      - FLASK_ENV=production
+    volumes:
+      - ./services/visual-hierarchy:/app
+      - ./services/visual-hierarchy/models/weights:/app/models/weights
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - ux-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ─────────────────────────────────────────────────────────
+  # MERN Stack
+  # ─────────────────────────────────────────────────────────
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: ux-server
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - MONGODB_URI=mongodb://mongodb:27017/ux-analyzer
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
+      - JWT_EXPIRES_IN=7d
+      - CLIENT_URL=http://localhost:3000
+      - COGNITIVE_URL=http://cognitive-load:8001
+      - TOUCH_URL=http://touch-target:8002
+      - SALIENCY_URL=http://visual-hierarchy:8003
+      - SERVICE_TIMEOUT_MS=60000
+    depends_on:
+      - mongodb
+      - cognitive-load
+      - touch-target
+      - visual-hierarchy
+    networks:
+      - ux-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: ux-client
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - server
+    networks:
+      - ux-network
+
+volumes:
+  mongo_data:
+
+networks:
+  ux-network:
+    driver: bridge
