@@ -39,6 +39,34 @@ const METRIC_CARDS = [
   { key: 'touch_target',     label: 'Touch Targets',     Icon: MousePointer,  desc: 'WCAG compliance & Fitts\'s Law' },
 ]
 
+/** Individual metric card — extracted so useCountUp hook is at top level */
+function MetricCard({ metricKey, label, Icon, desc, scores }) {
+  const val = Math.round(scores[metricKey] ?? 0)
+  const { cls, badge, label: sevLabel } = severity(val)
+  const animated = useCountUp(val)
+  return (
+    <div className="metric-card glass-card">
+      <div className="metric-card-header">
+        <div className="metric-icon-wrap">
+          <Icon size={20} color="var(--accent-primary)" />
+        </div>
+        <span className={`badge ${badge}`}>{sevLabel}</span>
+      </div>
+      <div className={`metric-score ${cls}`}>{animated}</div>
+      <div className="metric-bar-wrap">
+        <div className="metric-bar">
+          <div
+            className="metric-bar-fill"
+            style={{ width: `${val}%`, background: val >= 80 ? 'var(--success)' : val >= 55 ? 'var(--warning)' : 'var(--danger)' }}
+          />
+        </div>
+      </div>
+      <p className="metric-label">{label}</p>
+      <p className="metric-desc">{desc}</p>
+    </div>
+  )
+}
+
 export default function ScoreDashboard({ scores = {}, compositeScore = 0, grade = 'F' }) {
   const animatedComposite = useCountUp(compositeScore)
   const { cls: compositeClass } = severity(compositeScore)
