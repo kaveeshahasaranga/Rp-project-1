@@ -1,0 +1,58 @@
+.progress-wrap { padding: 32px; }
+.progress-steps { display: flex; flex-direction: column; gap: 0; position: relative; }
+.progress-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  position: relative;
+  padding-bottom: 24px;
+}
+.progress-step:last-child { padding-bottom: 0; }
+
+.step-connector {
+  position: absolute;
+  left: 11px;
+  top: 26px;
+  width: 2px;
+  bottom: 0;
+  background: var(--border);
+  transition: background 0.4s ease;
+}
+.connector-done { background: var(--success); }
+
+.step-icon-wrap {
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.step-text { display: flex; flex-direction: column; gap: 2px; padding-top: 2px; }
+.step-label { font-size: 0.9rem; font-weight: 600; }
+.step-desc  { font-size: 0.78rem; color: var(--text-subtle); }
+
+.step-done    .step-label { color: var(--success); }
+.step-active  .step-label { color: var(--accent-primary); }
+.step-pending .step-label { color: var(--text-muted); }
+
+/* Overall bar */
+.overall-bar {
+  height: 6px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 24px;
+}
+.overall-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-cyan));
+  transition: width 0.5s ease;
+}
+.progress-pct {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+  text-align: right;
+}
