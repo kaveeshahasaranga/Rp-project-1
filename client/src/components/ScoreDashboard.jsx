@@ -91,32 +91,9 @@ export default function ScoreDashboard({ scores = {}, compositeScore = 0, grade 
 
       {/* ── 3 Metric Cards ───────────────────────────────────────────── */}
       <div className="metric-cards">
-        {METRIC_CARDS.map(({ key, label, Icon, desc }) => {
-          const val = Math.round(scores[key] ?? 0)
-          const { cls, badge, label: sevLabel } = severity(val)
-          const animated = useCountUp(val)
-          return (
-            <div key={key} className="metric-card glass-card">
-              <div className="metric-card-header">
-                <div className="metric-icon-wrap">
-                  <Icon size={20} color="var(--accent-primary)" />
-                </div>
-                <span className={`badge ${badge}`}>{sevLabel}</span>
-              </div>
-              <div className={`metric-score ${cls}`}>{animated}</div>
-              <div className="metric-bar-wrap">
-                <div className="metric-bar">
-                  <div
-                    className="metric-bar-fill"
-                    style={{ width: `${val}%`, background: val >= 80 ? 'var(--success)' : val >= 55 ? 'var(--warning)' : 'var(--danger)' }}
-                  />
-                </div>
-              </div>
-              <p className="metric-label">{label}</p>
-              <p className="metric-desc">{desc}</p>
-            </div>
-          )
-        })}
+        {METRIC_CARDS.map(({ key, label, Icon, desc }) => (
+          <MetricCard key={key} metricKey={key} label={label} Icon={Icon} desc={desc} scores={scores} />
+        ))}
       </div>
 
       {/* ── Radar Chart ──────────────────────────────────────────────── */}
