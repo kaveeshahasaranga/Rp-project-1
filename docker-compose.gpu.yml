@@ -1,0 +1,16 @@
+# docker-compose.gpu.yml
+# Use this override on machines with NVIDIA GPU + nvidia-container-toolkit:
+#
+#   docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up --build
+#
+version: '3.9'
+
+services:
+  visual-hierarchy:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

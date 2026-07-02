@@ -80,16 +80,10 @@ services:
       - "8003:8003"
     environment:
       - FLASK_ENV=production
+      # Set to 'cuda' on GPU machines; service auto-detects at startup
     volumes:
       - ./services/visual-hierarchy:/app
       - ./services/visual-hierarchy/models/weights:/app/models/weights
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     networks:
       - ux-network
     healthcheck:
