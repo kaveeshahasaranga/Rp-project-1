@@ -19,17 +19,28 @@ import logging
 
 import cv2
 import numpy as np
-import torch
-import torchvision.models as models
-import torchvision.transforms as T
 from PIL import Image
+
+# ── Optional PyTorch — falls back to OpenCV if not installed ──────────────────
+try:
+    import torch
+    import torchvision.models as models
+    import torchvision.transforms as T
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+    logger_pre = logging.getLogger(__name__)
+    logger_pre.warning("PyTorch not installed — using OpenCV SpectralResidual fallback.")
 
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Hardware
 # ---------------------------------------------------------------------------
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if TORCH_AVAILABLE:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+else:
+    device = None
 
 MODEL_WEIGHTS_PATH = os.path.join(
     os.path.dirname(__file__), "..", "models", "weights", "TranSalNet_Res.pth"
@@ -41,7 +52,8 @@ MODEL_WEIGHTS_PATH = os.path.join(
 # Matches the public TranSalNet_Res checkpoint from https://github.com/LJOVO/TranSalNet
 # ---------------------------------------------------------------------------
 
-class TranSalNet_Res(torch.nn.Module):
+if TORCH_AVAILABLE:
+  class TranSalNet_Res(torch.nn.Module):
     """
     Simplified TranSalNet-Res architecture.
 
@@ -105,17 +117,20 @@ class TranSalNet_Res(torch.nn.Module):
 # ---------------------------------------------------------------------------
 # Module-level singletons
 # ---------------------------------------------------------------------------
-_model: torch.nn.Module | None = None
+_model = None
 _model_type: str = "none"
 
 # Input resolution expected by TranSalNet
 INPUT_H, INPUT_W = 288, 384
 
-_transform = T.Compose([
-    T.Resize((INPUT_H, INPUT_W)),
-    T.ToTensor(),
-    T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-])
+if TORCH_AVAILABLE:
+    _transform = T.Compose([
+        T.Resize((INPUT_H, INPUT_W)),
+        T.ToTensor(),
+        T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+else:
+    _transform = None
 
 
 # ---------------------------------------------------------------------------
@@ -127,11 +142,16 @@ def load_model() -> None:
     Load the saliency model once at application startup.
 
     Strategy:
-      1. If  models/weights/TranSalNet_Res.pth  exists, load TranSalNet-Res.
-      2. On any failure (missing file, shape mismatch, CUDA OOM, …),
-         fall back silently to OpenCV Spectral Residual (zero-dependency).
+      1. If PyTorch not installed → SpectralResidual-CV (CPU fallback).
+      2. If  models/weights/TranSalNet_Res.pth  not found → SpectralResidual-CV.
+      3. On any other failure (shape mismatch, CUDA OOM, …) → SpectralResidual-CV.
     """
     global _model, _model_type
+
+    if not TORCH_AVAILABLE:
+        logger.info("PyTorch not installed. Using OpenCV SpectralResidual (CPU fallback).")
+        _model_type = "SpectralResidual-CV"
+        return
 
     if not os.path.exists(MODEL_WEIGHTS_PATH):
         logger.info(

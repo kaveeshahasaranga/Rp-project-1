@@ -54,7 +54,8 @@ async def _extract(url: str) -> list[dict]:
         try:
             page = await browser.new_page(viewport={"width": 1440, "height": 900})
             logger.info("Navigating to %s", url)
-            await page.goto(url, wait_until="networkidle", timeout=30_000)
+            await page.goto(url, wait_until="domcontentloaded", timeout=45000)
+            await page.wait_for_timeout(2000)
 
             elements: list[dict] = await page.locator(INTERACTIVE_SELECTOR).evaluate_all(
                 """
