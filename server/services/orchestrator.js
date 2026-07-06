@@ -81,7 +81,7 @@ async function callSaliency({ imageBase64, traceId }) {
 // ─── Circuit breakers ─────────────────────────────────────────────────────────
 const cognitiveBreaker = new CircuitBreaker(callCognitive, CB_OPTIONS);
 const touchBreaker     = new CircuitBreaker(callTouch,     CB_OPTIONS);
-NS);
+const saliencyBreaker  = new CircuitBreaker(callSaliency,  CB_OPTIONS);
 
 // Log CB state changes
 [
